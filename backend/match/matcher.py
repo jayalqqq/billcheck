@@ -28,16 +28,22 @@ class PriceFile:
         self.desc_rows = list(self.by_cdm.values())
         self.desc_list = [r["description"] for r in self.desc_rows]
 
-    def best_by_description(self, description, candidates=None):
+    def best_by_description(self, description, candidates=None, rev=""):
         rows = candidates if candidates is not None else self.desc_rows
+        if not rows:
+            return None, 0
         choices = [r["description"] for r in rows]
-        if not choices:
+        results = process.extract(description, choices, scorer=fuzz.token_sort_ratio, limit=5)
+        if not results:
             return None, 0
-        result = process.extractOne(description, choices, scorer=fuzz.token_sort_ratio)
-        if result is None:
-            return None, 0
-        _, score, idx = result
-        return rows[idx], score
+        top_score = results[0][1]
+        tied = [rows[idx] for _, score, idx in results if score == top_score]
+        # tiebreaker: prefer the row whose revenue code matches the bill line
+        if rev:
+            for r in tied:
+                if r["rev_code"] == rev:
+                    return r, top_score
+        return tied[0], top_score
 
 
 def match_item(item, price):
@@ -48,6 +54,7 @@ def match_item(item, price):
                 "gross_charge": None, "discounted_cash": None})
 
     row = None
+    rev = item.get("rev", "")
 
     # 1. exact CDM: the hospital's own key, best case
     if item.get("cdm") and item["cdm"] in price.by_cdm:
@@ -60,12 +67,12 @@ def match_item(item, price):
         if len(candidates) == 1:
             row, score = candidates[0], 100
         else:
-            row, score = price.best_by_description(item["description"], candidates)
+            row, score = price.best_by_description(item["description"], candidates, rev=rev)
         out.update(match_method="cpt", confidence="medium", match_score=round(score))
 
     # 3. fuzzy description across the whole chargemaster
     elif item.get("description"):
-        row, score = price.best_by_description(item["description"])
+        row, score = price.best_by_description(item["description"], rev=rev)
         if score >= 85:
             out.update(match_method="description", confidence="medium", match_score=round(score))
         elif score >= 70:
