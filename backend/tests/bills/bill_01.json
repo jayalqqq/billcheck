@@ -1,0 +1,26 @@
+{
+  "bill_id": "bill_01",
+  "hospital_id": "san_ramon",
+  "hospital_name": "San Ramon Regional Medical Center",
+  "patient_name": "Test Patient A",
+  "account_number": "SR-2026-000141",
+  "date_of_service": "2026-08-14",
+  "scenario": "ER visit after a fall. Four planted errors.",
+  "lines": [
+    {"date": "2026-08-14", "cdm": "6100526", "cpt": "99284", "rev": "450", "description": "ER VISIT LVL IV",           "qty": 1,  "amount": 11169.00, "expected": "clean"},
+    {"date": "2026-08-14", "cdm": "5050450", "cpt": "70450", "rev": "350", "description": "CT HEAD/BRAIN WO CONTRST",  "qty": 1,  "amount": 12591.00, "expected": "clean"},
+    {"date": "2026-08-14", "cdm": "4901046", "cpt": "71046", "rev": "320", "description": "CHEST 2 VIEWS",             "qty": 1,  "amount": 2008.00,  "expected": "clean"},
+    {"date": "2026-08-14", "cdm": "4105028", "cpt": "85025", "rev": "300", "description": "CBC WITH AUTO DIFF",        "qty": 1,  "amount": 1117.00,  "expected": "clean"},
+    {"date": "2026-08-14", "cdm": "4105028", "cpt": "85025", "rev": "300", "description": "CBC WITH AUTO DIFF",        "qty": 1,  "amount": 1117.00,  "expected": "duplicate"},
+    {"date": "2026-08-14", "cdm": "4100111", "cpt": "80053", "rev": "300", "description": "COMP METABOLIC PANEL",      "qty": 1,  "amount": 4240.00,  "expected": "overcharge"},
+    {"date": "2026-08-14", "cdm": "6100760", "cpt": "96360", "rev": "450", "description": "IV INF HYD INIT 31-60MIN",  "qty": 1,  "amount": 1600.00,  "expected": "unbundled"},
+    {"date": "2026-08-14", "cdm": "6100774", "cpt": "96374", "rev": "450", "description": "INJ TX/PRPH/DX IVP INT",    "qty": 1,  "amount": 880.00,   "expected": "clean"},
+    {"date": "2026-08-14", "cdm": "5322936", "cpt": "",      "rev": "636", "description": "ONDANSETRON PER 1MG IJ",    "qty": 40, "amount": 5440.00,  "expected": "quantity_outlier"}
+  ],
+  "planted_errors": {
+    "duplicate": "Line 5 repeats line 4 (same CDM, same date, no reason).",
+    "overcharge": "Line 6 is $4,240 vs published gross $3,263 (30% over; threshold is 20%).",
+    "unbundled": "96360 (IV hydration) billed alongside 96374 (IV push). NCCI treats hydration as included in the push. VERIFY against the real NCCI table in week 3 before trusting this.",
+    "quantity_outlier": "Line 9 is 40 units of a per-1mg drug; a normal ER dose is 4mg, so 4 units. 10x is the planted outlier."
+  }
+}
